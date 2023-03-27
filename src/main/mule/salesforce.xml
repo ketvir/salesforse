@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="2db549f4-6fa0-45a7-a940-bbf74ca67ab6" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="5de17208-ba9b-4e4f-8e04-7bae920fa7ca" >
+		<salesforce:basic-connection username="ketvir@gmail.com" password="Dh21@@nvi" securityToken="ATgdSjm8VaxrtfvkZ6I1yso0" />
+	</salesforce:sfdc-config>
+	<flow name="salesforceFlow" doc:id="cc6491c0-786f-4927-b363-c914ef63d58f" >
+		<http:listener doc:name="Listener" doc:id="88297e48-7ab1-455e-9c7c-4435953a32b6" config-ref="HTTP_Listener_config" path="/quary"/>
+		<salesforce:query doc:name="Query" doc:id="41aff7e5-c319-4add-bc69-cc2959c2b93e" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[SELECT course__c,Id,Name,sno__c FROM student__c]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="362a3572-4ac6-4e93-a2dc-eabf2de63be2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="salesforceFlow6" doc:id="0d463966-92a6-4bcf-a2f5-b469944c6dc5" >
+		<salesforce:replay-channel-listener doc:name="Replay channel listener" doc:id="601b0a23-5d97-47cf-9352-baae318be24e" config-ref="Salesforce_Config" streamingChannel="/data/student__ChangeEvent" replayOption="ONLY_NEW"/>
+		<logger level="INFO" doc:name="Logger" doc:id="2a1492b3-73c3-42ba-88b5-16bb66fee2e8" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="8886de14-16d3-4dc0-a53f-d7b08c51c592" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="salesforceFlow1" doc:id="91fcd854-4f77-458c-9fde-db8f4b67acb3" >
+		<http:listener doc:name="Listener" doc:id="0d1fa963-1b80-4f5a-b73d-cd959a370e07" config-ref="HTTP_Listener_config" path="/insert"/>
+		<ee:transform doc:name="Transform Message" doc:id="d277332f-ebb7-45d5-9168-77a5d4718ee7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map
+	{
+		 "course__c": $.course,
+         "Name": $.name
+	}
+	
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create" doc:id="abd15c4f-0051-4d83-8e36-616ad46efa16" config-ref="Salesforce_Config" type="student__c"/>
+		<ee:transform doc:name="Transform Message" doc:id="6894fbf9-7a14-49f3-9dcd-adbed662bdce" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="salesforceFlow2" doc:id="7df8ac64-4e3e-415f-891f-501ed99f2107" >
+		<http:listener doc:name="Listener" doc:id="b9d76bed-a42d-4f70-89ab-062802e14201" config-ref="HTTP_Listener_config" path="/delete"/>
+		<logger level="INFO" doc:name="Logger" doc:id="892be297-7260-4548-9fd6-d6d3cb143f58" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="da95d173-1838-4ff4-821a-2b6f1a9fad49" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:delete doc:name="Delete" doc:id="777d322d-a03e-4cba-a136-9f2d6eb85915" config-ref="Salesforce_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="79e8f88d-5054-41b2-a7bc-ca24dc65d987" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="salesforceFlow3" doc:id="d20ecac0-38b3-46ce-ad9f-a593b197f264" >
+		<http:listener doc:name="Listener" doc:id="59a17ecc-a6d9-463e-ad1f-e393c3e9386c" config-ref="HTTP_Listener_config" path="/qall"/>
+		<salesforce:query-all doc:name="Query all" doc:id="3e918a11-b0f6-45f4-8d81-70e1b9ed02fa" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[SELECT course__c,Id,Name,sno__c FROM student__c]]></salesforce:salesforce-query>
+		</salesforce:query-all>
+		<ee:transform doc:name="Transform Message" doc:id="da434103-9f0e-4c32-adc0-91ad1109b1bd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="salesforceFlow4" doc:id="3bd3781d-80e3-4601-ace4-b3bd3f1e2de3" >
+		<http:listener doc:name="Listener" doc:id="a97cfad7-ca10-47d9-935c-743ae12cc1c1" config-ref="HTTP_Listener_config" path="/update"/>
+		<ee:transform doc:name="Transform Message" doc:id="49ff93cc-fb59-42d9-a632-fae493747092" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map
+	{
+		 "course__c": $.course,
+         "Name": $.name,
+         "Id": $.Id
+	}
+	]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:update doc:name="Update" doc:id="3d56d523-ddf5-4762-b8ea-d2a8d1282de3" config-ref="Salesforce_Config" type="student__c"/>
+		<ee:transform doc:name="Transform Message" doc:id="60f2cd66-3232-4b03-8f78-d7d2d27cd1e8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="salesforceFlow5" doc:id="74b72a1e-63f0-4e7b-aad0-7e2ac9626252" >
+		<http:listener doc:name="Listener" doc:id="c90964ae-5d97-482e-9b0a-77ceb74a2bc1" config-ref="HTTP_Listener_config" path="/upsert"/>
+		<ee:transform doc:name="Transform Message" doc:id="f948d686-5084-4c40-a4fd-d04ac1f78467" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map
+	{
+		 "course__c": $.course,
+         "Name": $.name,
+         "sno__c": $.sno
+	}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:upsert doc:name="Upsert" doc:id="4f52af7b-f7fa-48d8-9e34-300f4645b9f2" config-ref="Salesforce_Config" objectType="student__c" externalIdFieldName="sno__c"/>
+		<ee:transform doc:name="Transform Message" doc:id="2236dfc1-017a-4c09-8070-e1ebe3c5bc61" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
